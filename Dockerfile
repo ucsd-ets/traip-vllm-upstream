@@ -9,6 +9,8 @@ FROM nvidia/cuda:11.8.0-base-ubuntu22.04 AS vllm-base
 RUN apt-get update -y \
     && apt-get install -y python3-pip
 
+RUN pip install -U xformers torch==2.1.2 --index-url https://download.pytorch.org/whl/cu118
+
 WORKDIR /workspace
 COPY requirements.txt requirements.txt
 RUN --mount=type=cache,target=/root/.cache/pip \
@@ -21,7 +23,7 @@ RUN --mount=type=cache,target=/root/.cache/pip \
 FROM vllm-base AS vllm-openai
 # install additional dependencies for openai api server
 RUN --mount=type=cache,target=/root/.cache/pip \
-    pip install accelerate
+    pip install --no-deps accelerate
 
 COPY --from=build /workspace/vllm/*.so /workspace/vllm/
 COPY vllm vllm
