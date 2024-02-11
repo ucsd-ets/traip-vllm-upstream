@@ -1,5 +1,5 @@
 
-FROM docker pull ghcr.io/ucsd-ets/traip-vllm-upstream:20240211v7 as build
+FROM ghcr.io/ucsd-ets/traip-vllm-upstream:20240211v7 as build
 
 #################### RUNTIME BASE IMAGE ####################
 # use CUDA base as CUDA runtime dependencies are already installed via pip
