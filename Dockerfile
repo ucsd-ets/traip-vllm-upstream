@@ -9,7 +9,7 @@ RUN apt-get update -y \
 
 WORKDIR /workspace
 
-RUN pip install -U xformers torch==2.0.1 --index-url https://download.pytorch.org/whl/cu118
+RUN pip install -U xformers==0.0.22 torch==2.0.1 --index-url https://download.pytorch.org/whl/cu118
 
 # install build and runtime dependencies
 COPY requirements.txt requirements.txt
@@ -53,47 +53,3 @@ ENV VLLM_INSTALL_PUNICA_KERNELS=1
 RUN python3 setup.py build_ext --inplace
 #################### EXTENSION Build IMAGE ####################
 
-
-#################### TEST IMAGE ####################
-# image to run unit testing suite
-FROM dev AS test
-
-# copy pytorch extensions separately to avoid having to rebuild
-# when python code changes
-WORKDIR /vllm-workspace
-# ADD is used to preserve directory structure
-ADD . /vllm-workspace/
-COPY --from=build /workspace/vllm/*.so /vllm-workspace/vllm/
-# ignore build dependencies installation because we are using pre-complied extensions
-RUN rm pyproject.toml
-RUN --mount=type=cache,target=/root/.cache/pip VLLM_USE_PRECOMPILED=1 pip install . --verbose
-#################### TEST IMAGE ####################
-
-
-#################### RUNTIME BASE IMAGE ####################
-# use CUDA base as CUDA runtime dependencies are already installed via pip
-FROM nvidia/cuda:12.1.0-base-ubuntu22.04 AS vllm-base
-
-# libnccl required for ray
-RUN apt-get update -y \
-    && apt-get install -y python3-pip
-
-WORKDIR /workspace
-COPY requirements.txt requirements.txt
-RUN --mount=type=cache,target=/root/.cache/pip \
-    pip install -r requirements.txt
-#################### RUNTIME BASE IMAGE ####################
-
-
-#################### OPENAI API SERVER ####################
-# openai api server alternative
-FROM vllm-base AS vllm-openai
-# install additional dependencies for openai api server
-RUN --mount=type=cache,target=/root/.cache/pip \
-    pip install accelerate
-
-COPY --from=build /workspace/vllm/*.so /workspace/vllm/
-COPY vllm vllm
-
-ENTRYPOINT ["python3", "-m", "vllm.entrypoints.openai.api_server"]
-#################### OPENAI API SERVER ####################
