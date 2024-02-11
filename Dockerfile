@@ -2,12 +2,14 @@
 # to run the OpenAI compatible server.
 
 #################### BASE BUILD IMAGE ####################
-FROM nvidia/cuda:12.1.0-devel-ubuntu22.04 AS dev
+FROM nvidia/cuda:11.8.0-devel-ubuntu22.04 AS dev
 
 RUN apt-get update -y \
     && apt-get install -y python3-pip git
 
 WORKDIR /workspace
+
+RUN pip install -U xformers torch==2.0.1 --index-url https://download.pytorch.org/whl/cu118
 
 # install build and runtime dependencies
 COPY requirements.txt requirements.txt
