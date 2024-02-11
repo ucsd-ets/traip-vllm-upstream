@@ -9,7 +9,7 @@ RUN apt-get update -y \
 
 WORKDIR /workspace
 
-RUN pip install -U xformers==0.0.22 torch==2.0.1 --index-url https://download.pytorch.org/whl/cu118
+RUN pip install -U xformers==0.0.22.post7+cu118 torch==2.0.1 --index-url https://download.pytorch.org/whl/cu118
 
 # install build and runtime dependencies
 COPY requirements.txt requirements.txt
