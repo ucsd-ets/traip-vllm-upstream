@@ -2,12 +2,14 @@
 # to run the OpenAI compatible server.
 
 #################### BASE BUILD IMAGE ####################
-FROM nvidia/cuda:12.1.0-devel-ubuntu22.04 AS dev
+FROM nvidia/cuda:11.8.0-devel-ubuntu22.04 AS dev
 
 RUN apt-get update -y \
     && apt-get install -y python3-pip git
 
 WORKDIR /workspace
+
+RUN pip install -U xformers torch==2.1.2 --index-url https://download.pytorch.org/whl/cu118
 
 # install build and runtime dependencies
 COPY requirements.txt requirements.txt
@@ -51,7 +53,6 @@ ENV VLLM_INSTALL_PUNICA_KERNELS=1
 RUN python3 setup.py build_ext --inplace
 #################### EXTENSION Build IMAGE ####################
 
-
 #################### TEST IMAGE ####################
 # image to run unit testing suite
 FROM dev AS test
@@ -67,14 +68,15 @@ RUN rm pyproject.toml
 RUN --mount=type=cache,target=/root/.cache/pip VLLM_USE_PRECOMPILED=1 pip install . --verbose
 #################### TEST IMAGE ####################
 
-
 #################### RUNTIME BASE IMAGE ####################
 # use CUDA base as CUDA runtime dependencies are already installed via pip
-FROM nvidia/cuda:12.1.0-base-ubuntu22.04 AS vllm-base
+FROM nvidia/cuda:11.8.0-base-ubuntu22.04 AS vllm-base
 
 # libnccl required for ray
 RUN apt-get update -y \
     && apt-get install -y python3-pip
+
+RUN pip install -U xformers torch==2.1.2 --index-url https://download.pytorch.org/whl/cu118
 
 WORKDIR /workspace
 COPY requirements.txt requirements.txt
@@ -88,7 +90,7 @@ RUN --mount=type=cache,target=/root/.cache/pip \
 FROM vllm-base AS vllm-openai
 # install additional dependencies for openai api server
 RUN --mount=type=cache,target=/root/.cache/pip \
-    pip install accelerate
+    pip install --no-deps accelerate
 
 COPY --from=build /workspace/vllm/*.so /workspace/vllm/
 COPY vllm vllm
